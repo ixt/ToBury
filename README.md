@@ -15,3 +15,4 @@ We recommend running one serivce on a Pi especially if the Pi is not a Pi 3.
 
 # WARNING: Pi's are pretty physically insecure and cannot boot encrypted partitions (and they would suck if they could) this is why we suggest keeping the Pi in a place you can keep physically secure, in the future we may think of a work around that is suitable to fix this issue (which could leak data and provide an adversary with the keys to immitate the services) in the meantime don't use this if you don't know what you're doing or don't think you can keep the Pi in a reasonably secure location 
 
+When the base service is installed (Tor, NGINX and a SSH Service) the script will generate a keypair for the main user and then share it as an archive on the webservice until it is logged in for the first time with that key then the private key is deleted from the Pi, so make sure to keep care of the keypair and make a backup. Instructions for TailsOS are provided.  
