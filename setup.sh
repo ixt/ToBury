@@ -3,23 +3,15 @@
 
 INTERACTIVE=True
 
-get_ssh() {
-    if service ssh status | grep -q inactive; then
-        echo 1
-    else
-        echo 0
-    fi
-}
-
 enable_ssh(){
     if [ -e /var/log/regen_ssh_keys.log ] && ! grep -q "^finished" /var/log/regen_ssh_keys.log; then
         whiptail --msgbox "Initial ssh key generation still running. Please wait and try again." 20 60 2
         return 1
     fi
-    if [ $(get_ssh) -eq 0 ]; then
-        systemctl enable ssh.service
-        systemctl start ssh.service
-    fi
+    update-rc.d ssh enable
+    invoke-rc.d ssh start
+    systemctl enable ssh.service
+    systemctl start ssh.service
 }
 
 do_upgrade(){
@@ -73,12 +65,12 @@ install_base() {
     rm /var/www/* -rf
     tar cvfz /var/www/keys.tar.gz $HOSTNAME* 
     chmod 644 /var/www/keys.tar.gz
-    cp ~pi/.tobury/configs/nginx.conf /etc/nginx/sites-enabled/default
+    sudo cp ~pi/.tobury/config/nginx.conf /etc/nginx/sites-enabled/default
     service nginx reload
     
     echo "sshd: localhost" >> /etc/hosts.allow
     echo "ALL: ALL" >> /etc/hosts.deny
-    sudo cp ~pi/.tobury/configs/ssh.conf /etc/ssh/sshd_config
+    sudo cp ~pi/.tobury/config/ssh.conf /etc/ssh/sshd_config
     enable_ssh
     whiptail --msgbox "\
         go to $HOSTNAME and download keys.tar.gz on your laptop \
