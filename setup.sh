@@ -17,8 +17,8 @@ enable_ssh(){
         return 1
     fi
     if [ $(get_ssh) -eq 0 ]; then
-        update-rc.d ssh enable &&
-        invoke-rc.d ssh start &&
+        systemctl enable ssh.service
+        systemctl start ssh.service
     fi
 }
 
@@ -58,23 +58,27 @@ install_base() {
     echo "HiddenServicePort 22 localhost:22" >> /etc/tor/torrc
     echo "HiddenServicePort 80 localhost:80" >> /etc/tor/torrc
     sudo service tor reload
+    sleep 30
+    while [ ! -e "/var/lib/tor/toBury/hostname"]; do
+        sleep 1
+    done
     HOSTNAME=$(cat /var/lib/tor/toBury/hostname)
     sudo -u pi mkdir ~pi/.ssh -p
     sudo -u pi ssh-keygen -t ed25519 -N "" -f "$HOSTNAME.key"
     cat $HOSTNAME.key.pub >> ~pi/.ssh/authorized_keys
     # This will delete the keys when you connect the first time
-    echo "sudo rm ~pi/$HOSTNAME*; sudo rm /var/www/keys.tar.gz; sudo rm ~pi/.ssh/rc" >> ~pi/.ssh/rc
+    echo "sudo rm ~pi/$HOSTNAME*; sudo rm /var/www/keys.tar.gz; sudo rm ~pi/.ssh/rc" > ~pi/.ssh/rc
 
-    sudo torsocks apt install nginx
+    sudo torsocks apt install nginx --yes
     rm /var/www/* -rf
     tar cvfz /var/www/keys.tar.gz $HOSTNAME* 
     chmod 644 /var/www/keys.tar.gz
-    cp ~pi/.tobury/configs/nginx.conf /etc/nginx/sites-enabled/default.conf
+    cp ~pi/.tobury/configs/nginx.conf /etc/nginx/sites-enabled/default
     service nginx reload
     
     echo "sshd: localhost" >> /etc/hosts.allow
     echo "ALL: ALL" >> /etc/hosts.deny
-    cp ~pi/.tobury/configs/ssh.conf /etc/ssh/sshd_config
+    sudo cp ~pi/.tobury/configs/ssh.conf /etc/ssh/sshd_config
     enable_ssh
     whiptail --msgbox "\
         go to $HOSTNAME and download keys.tar.gz on your laptop \
@@ -82,8 +86,10 @@ install_base() {
         \"tar xvf ~/Tor\ Browser/keys.tar.gz\" \
         use \"ssh pi@$HOSTNAME -i $HOSTNAME.key\" to connect \
         after first connection you wont be able to redownload the keys so back them up \
-    " 60 20
+    " $WT_HEIGHT $WT_WIDTH
 }
+
+calc_wt_size
 
 if [ "$INTERACTIVE" == "True" ]; then
     while true; do
