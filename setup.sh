@@ -44,6 +44,8 @@ do_about() {
 
 install_base() {
     #RET=$(whiptail --yesno 
+    # TODO: Add better TUI to this.
+
     sudo apt update 
     sudo apt install tor torsocks --yes
     echo "HiddenServiceDir /var/lib/tor/toBury" >> /etc/tor/torrc
@@ -56,10 +58,22 @@ install_base() {
     done
     HOSTNAME=$(cat /var/lib/tor/toBury/hostname)
     sudo -u pi mkdir ~pi/.ssh -p
+
+    # We use a ed25519 key because its better than rsa, less weak to 
+    # classical computing attacks and smaller keysizes.
+
     sudo -u pi ssh-keygen -t ed25519 -N "" -f "$HOSTNAME.key"
     cat $HOSTNAME.key.pub >> ~pi/.ssh/authorized_keys
+    ### TODO: Add a script for easy setup of keys and hosts.
+    
     # This will delete the keys when you connect the first time
-    echo "sudo rm ~pi/$HOSTNAME*; sudo rm /var/www/keys.tar.gz; sudo rm ~pi/.ssh/rc" > ~pi/.ssh/rc
+    echo "sudo rm ~pi/$HOSTNAME*; sudo shred /var/www/keys.tar.gz; sudo rm /var/www/keys.tar.gz; sudo rm ~pi/.ssh/rc" > ~pi/.ssh/rc
+    
+    ### TODO: Add in the success/setup page. 
+
+    # This is for hosting a website that holds the keys. 
+    # We could switch to Onionshare which has a lot of features built in
+    # for destroying files that are temporary (and is pretty)
 
     sudo torsocks apt install nginx --yes
     rm /var/www/* -rf
@@ -79,6 +93,13 @@ install_base() {
         use \"ssh pi@$HOSTNAME -i $HOSTNAME.key\" to connect \
         after first connection you wont be able to redownload the keys so back them up \
     " $WT_HEIGHT $WT_WIDTH
+    
+    # TODO: This is an unacceptable UX currently and needs to be resolved. 
+    # todo's mentioned before this are suggestions for fixes to this issue
+    # but there are also issues with that too. For instance is onion share 
+    # even in support of ARM / Pi, is it in the repos? how large is it?
+    # As it fails closed, I would assume that the attack vector is probably 
+    # Even less than using NGINX and the usability is by far better. 
 }
 
 calc_wt_size
